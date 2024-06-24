@@ -14,7 +14,6 @@ const UploadSound: React.FC<UploadSoundProps> = ({visible, onClose, notification
     const [fileList, setFileList] = useState<any[]>([]);
     const [fileName, setFileName] = useState('');
 
-    // Clear data when the modal is opened
     useEffect(() => {
         if (visible) {
             setFileList([]);
@@ -34,15 +33,9 @@ const UploadSound: React.FC<UploadSoundProps> = ({visible, onClose, notification
             setFileName(info.file.name);
         } else if (info.file.status === 'error') {
             message.error(`${info.file.name} file upload failed.`);
+        } else if (info.file.status !== 'removed') {
+            setFileName(info.file.name);
         }
-    };
-
-    const beforeUpload = (file: any) => {
-        const isAudio = file.type.startsWith('audio/');
-        if (!isAudio) {
-            message.error('You can only upload audio files!');
-        }
-        return isAudio || Upload.LIST_IGNORE;
     };
 
     const handleUpload = async () => {
@@ -84,7 +77,7 @@ const UploadSound: React.FC<UploadSoundProps> = ({visible, onClose, notification
                 <Button key="cancel" onClick={onClose}>
                     Cancel
                 </Button>,
-                <Button key="upload" type="primary" onClick={handleUpload}>
+                <Button key="upload" type="primary" onClick={handleUpload} disabled={!fileName}>
                     Upload
                 </Button>,
             ]}
