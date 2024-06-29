@@ -49,6 +49,23 @@ export const post = async (endpoint: string, instance: NotificationInstance, bod
     }
 }
 
+export const put = async (endpoint: string, instance: NotificationInstance, body?: any) => {
+    const token = localStorage.getItem('token');
+    const headers: Record<string, string> = {
+        'Authorization': `Bearer ${token}`
+    };
+
+    const config = {
+        headers
+    };
+    try {
+        const response = await api.put(endpoint, body, config);
+        return response.data;
+    } catch (error) {
+        handleError(error, instance);
+    }
+}
+
 export const get = async (endpoint: string, instance: NotificationInstance, params?: any) => {
     const token = localStorage.getItem('token');
     const config = {

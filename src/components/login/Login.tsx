@@ -1,13 +1,25 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {Button, Form, Input, notification} from 'antd';
 import {LockOutlined, UserOutlined} from '@ant-design/icons';
 import {Link, useNavigate} from "react-router-dom";
 import {loginUser} from "../service/apiService";
+import {useAuth} from "../auth/AuthProvider";
 
 const Login: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
     const [api, contextHolder] = notification.useNotification();
+
+    const { tokenExpiredMessage, setTokenExpiredMessage } = useAuth();
+
+    useEffect(() => {
+        console.log(tokenExpiredMessage)
+        if (tokenExpiredMessage) {
+            notification.error({
+                message: tokenExpiredMessage,
+            });
+        }
+    }, [tokenExpiredMessage]);
 
     const onFinish = async (values: any) => {
         setLoading(true);
@@ -15,10 +27,16 @@ const Login: React.FC = () => {
         if (response) {
             localStorage.setItem('token', response.result.token);
             localStorage.setItem('role', response.result.role);
+            localStorage.setItem('exp', response.result.exp);
             localStorage.setItem('username', values.username);
-            navigate('/home');
+            if (response.result.role === 'USER') {
+                navigate('/home');
+            } else if (response.result.role === 'ADMIN') {
+                navigate('/admin/dashboard');
+            }
         }
         setLoading(false);
+        setTokenExpiredMessage('');
     };
 
     const onFinishFailed = (errorInfo: any) => {

@@ -5,47 +5,57 @@ import {
     CaretLeftOutlined,
     CaretRightOutlined,
     CloudUploadOutlined,
-    HeartOutlined,
+    HeartOutlined, HomeOutlined,
     LogoutOutlined,
     PauseOutlined,
     PlayCircleOutlined,
     UnorderedListOutlined
 } from '@ant-design/icons';
-import {get} from "../service/apiService";
+import {get, post, put} from "../service/apiService";
 import CreatePlaylist from "../create-play-list/CreatePlaylist";
 import UploadSound from "../upload/UploadSound";
 import SoundList, {Sound} from "../sound-list/SoundList";
+import {useNavigate} from "react-router-dom";
+import {Playlist} from "../playlist-selector/PlaylistSelector";
 
 const {Header, Sider, Content} = Layout;
 
 const Home: React.FC = () => {
 
+    const navigate = useNavigate()
     const [api, contextHolder] = notification.useNotification();
     const [playListSub, setPlayListSub] = useState([{key: '', label: ''}]);
-    const [isModalVisible, setIsModalVisible] = useState(false);
+    const [isModalUploadVisible, setIsModalUploadVisible] = useState(false);
+    const [isModalCreatePlaylistVisible, setIsModalCreatePlaylistVisible] = useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [soundList, setSoundList] = useState<Sound[]>([]);
     const [playingSound, setPlayingSound] = useState<Sound>();
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(0);
+    const [isLikedList, setIsLikedList] = useState(false);
+    const [playListId, setPlayListId] = useState<number>();
+    const [playlist, setPlaylist] = useState<Playlist[]>()
 
-    const handleOpenModal = () => {
-        setIsModalVisible(true);
+
+    const handleCloseModalUpload = () => {
+        setIsModalUploadVisible(false);
     };
 
-    const handleCloseModal = () => {
-        setIsModalVisible(false);
+    const handleCloseModalCreatePlaylist = () => {
+        setIsModalCreatePlaylistVisible(false);
     };
 
     const fetchSoundList = async (page: number) => {
         const params = {
-            page: page,
             size: 15,
+            isLiked: isLikedList,
+            page,
+            playListId,
         }
         const res = await get('/sounds', api, params);
         let sounds: Sound[] = res.result.data;
-        sounds = sounds.map(({ id, title, liked }) => ({
+        sounds = sounds.map(({id, title, liked}) => ({
             id,
             url: `${process.env.REACT_APP_API_URL}/sounds/${id}`,
             title,
@@ -61,13 +71,19 @@ const Home: React.FC = () => {
         const res = await get('/playlists', api);
 
         const subPlaylist = res.result.map((value: any, index: number) => ({
-            key: `playlist-${index + 2}`,
+            key: value.id,
             label: value?.title
         }));
 
+        const playList = subPlaylist.map((value: any) => ({
+            id: value.key,
+            title: value.label
+        }));
+        setPlaylist(playList);
+
         setPlayListSub([
             {
-                key: 'playlist-1',
+                key: 'playlist-0',
                 label: 'Create Playlist',
             },
             ...subPlaylist
@@ -76,34 +92,54 @@ const Home: React.FC = () => {
 
     useEffect(() => {
         fetchPlayList();
+    }, []);
+
+    useEffect(() => {
         fetchSoundList(currentPage);
-    }, [currentPage]);
+    }, [currentPage, isLikedList, playListId]);
 
     const handlePageChange = (page: number) => {
         setCurrentPage(page);
     };
 
     const handleUploadSound = () => {
-        handleOpenModal();
+        setIsModalUploadVisible(true);
+    };
+
+    const handleCreatePlaylist = () => {
+        setIsModalCreatePlaylistVisible(true)
     };
 
     const handleLikedSound = () => {
-        console.log('Clicked Liked Sound');
+        setIsLikedList(true);
+        setPlayListId(undefined);
+    };
+
+    const handleHome = () => {
+        setIsLikedList(false);
+        setPlayListId(undefined);
     };
 
 
     const handlePlaylistClick = (key: React.Key) => {
-        if (key === 'playlist-1') {
-            handleOpenModal();
+        if (key === 'playlist-0') {
+            handleCreatePlaylist();
+        } else {
+            setIsLikedList(false);
+            setPlayListId(key as number);
+        }
+    }
+
+    const handleLogout = async () => {
+        const res = await post('/auth/logout', api);
+        if (res) {
+            localStorage.removeItem('token');
+            navigate('/login');
         }
     };
 
-    const handleLogout = () => {
-        console.log('Clicked Logout');
-    };
-
     const handlePlaylistCreated = () => {
-        setIsModalVisible(false);
+        setIsModalCreatePlaylistVisible(false);
         fetchPlayList();
     };
 
@@ -115,9 +151,9 @@ const Home: React.FC = () => {
     const menuItem: MenuProps['items'] = [
         {
             key: `menu-1`,
-            icon: <CloudUploadOutlined/>,
-            label: `Upload Sound`,
-            onClick: handleUploadSound
+            icon: <HomeOutlined />,
+            label: `Home`,
+            onClick: handleHome
         },
         {
             key: `menu-2`,
@@ -149,7 +185,17 @@ const Home: React.FC = () => {
     };
 
     const handlePreviousSound = () => {
-
+        if (playingSound) {
+            const currentIndex = soundList.findIndex(sound => sound.id === playingSound.id);
+            if (currentIndex !== -1) {
+                const previousIndex = (currentIndex - 1 + soundList.length) % soundList.length;
+                handlePlayInList(soundList[previousIndex]);
+                setPlayingSound(soundList[previousIndex]);
+            }
+        } else if (soundList.length > 0) {
+            handlePlayInList(soundList[0]);
+            setPlayingSound(soundList[0]);
+        }
     };
 
     const handleNextSound = () => {
@@ -181,6 +227,13 @@ const Home: React.FC = () => {
         setIsPlaying(false);
     };
 
+    const handleLikeSoundInList = async (song: Sound) => {
+        const res = await put(`/sounds/${song.id}/favorites?isLiked=${!song.liked}`, api);
+        if (res) {
+            await fetchSoundList(currentPage);
+        }
+    };
+
     return (
         <>
             {contextHolder}
@@ -188,7 +241,11 @@ const Home: React.FC = () => {
                 style={{minHeight: '100vh'}}>
                 <Sider trigger={null}>
                     <h2 style={{color: 'wheat'}}>{username}</h2>
+
                     <Sider width={200} style={{background: colorBgContainer}}>
+                        <Button style={{background: colorBgContainer, width: '100%', height: 50, border: 10}} icon={<CloudUploadOutlined/>} onClick={handleUploadSound}>
+                            Upload Sound
+                        </Button>
                         <Menu
                             theme="dark"
                             mode="inline"
@@ -231,20 +288,27 @@ const Home: React.FC = () => {
                             justifyContent: 'space-between'
                         }}
                     >
-                        <SoundList sounds={soundList} onPlay={handlePlayInList}/>
+                        <SoundList sounds={soundList}
+                                   onPlay={handlePlayInList}
+                                   onLike={handleLikeSoundInList}
+                                   playList={playlist}
+                                   playlistId={playListId}
+                                   actionPlaylist={() => fetchSoundList(1)}
+                                   notificationInstance={api}/>
                         <Pagination
                             current={currentPage}
                             total={totalPages * 10}
                             onChange={handlePageChange}
-                            style={{ marginTop: 20, textAlign: 'center' }}
+                            style={{marginTop: 20, textAlign: 'center'}}
                         />
-                        <CreatePlaylist visible={isModalVisible}
-                                        onClose={handleCloseModal}
+                        <CreatePlaylist visible={isModalCreatePlaylistVisible}
+                                        onClose={handleCloseModalCreatePlaylist}
                                         notificationInstance={api}
                                         onPlaylistCreated={handlePlaylistCreated}/>
-                        <UploadSound onClose={handleCloseModal}
+                        <UploadSound onClose={handleCloseModalUpload}
                                      notificationInstance={api}
-                                     visible={isModalVisible}/>
+                                     visible={isModalUploadVisible}
+                                     onUploadSuccess={() => fetchSoundList(currentPage)}/>
                     </Content>
                 </Layout>
             </Layout>

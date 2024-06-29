@@ -7,10 +7,11 @@ import {post} from '../service/apiService';
 interface UploadSoundProps {
     visible: boolean;
     onClose: () => void;
+    onUploadSuccess: () => void;
     notificationInstance: NotificationInstance;
 }
 
-const UploadSound: React.FC<UploadSoundProps> = ({visible, onClose, notificationInstance}) => {
+const UploadSound: React.FC<UploadSoundProps> = ({visible, onClose, notificationInstance, onUploadSuccess}) => {
     const [fileList, setFileList] = useState<any[]>([]);
     const [fileName, setFileName] = useState('');
 
@@ -58,6 +59,7 @@ const UploadSound: React.FC<UploadSoundProps> = ({visible, onClose, notification
                 const createSoundRes = await post('/sounds', notificationInstance, req);
                 if (createSoundRes) {
                     message.success('File uploaded successfully');
+                    onUploadSuccess();
                     onClose();
                 }
             }
