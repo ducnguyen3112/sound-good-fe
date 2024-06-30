@@ -25,8 +25,8 @@ const Dashboard: React.FC = () => {
         }
         const res = await get('/users', api, params);
         if (res) {
-            setUsers(res.result.data);
-            setTotalPages(res.result.totalPages);
+            setUsers(res?.result.data);
+            setTotalPages(res?.result.totalPages);
 
         }
     }

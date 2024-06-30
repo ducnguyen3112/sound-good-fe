@@ -5,7 +5,7 @@ import {
     CaretLeftOutlined,
     CaretRightOutlined,
     CloudUploadOutlined,
-    HeartOutlined, HomeOutlined,
+    HeartOutlined, HomeOutlined, LoginOutlined,
     LogoutOutlined,
     PauseOutlined,
     PlayCircleOutlined,
@@ -17,6 +17,7 @@ import UploadSound from "../upload/UploadSound";
 import SoundList, {Sound} from "../sound-list/SoundList";
 import {useNavigate} from "react-router-dom";
 import {Playlist} from "../playlist-selector/PlaylistSelector";
+import {useAuth} from "../auth/AuthProvider";
 
 const {Header, Sider, Content} = Layout;
 
@@ -36,6 +37,7 @@ const Home: React.FC = () => {
     const [isLikedList, setIsLikedList] = useState(false);
     const [playListId, setPlayListId] = useState<number>();
     const [playlist, setPlaylist] = useState<Playlist[]>()
+    const {isAuthenticated, setIsAuthenticated} = useAuth();
 
 
     const handleCloseModalUpload = () => {
@@ -54,8 +56,8 @@ const Home: React.FC = () => {
             playListId,
         }
         const res = await get('/sounds', api, params);
-        let sounds: Sound[] = res.result.data;
-        sounds = sounds.map(({id, title, liked}) => ({
+        let sounds: Sound[] = res?.result.data;
+        sounds = sounds?.map(({id, title, liked}) => ({
             id,
             url: `${process.env.REACT_APP_API_URL}/sounds/${id}`,
             title,
@@ -64,30 +66,31 @@ const Home: React.FC = () => {
         }));
 
         setSoundList(sounds);
-        setTotalPages(res.result.totalPages);
+        setTotalPages(res?.result.totalPages);
     }
 
     const fetchPlayList = async () => {
-        const res = await get('/playlists', api);
+        if (isAuthenticated) {
+            const res = await get('/playlists', api);
+            const subPlaylist = res?.result?.map((value: any, index: number) => ({
+                key: value.id,
+                label: value?.title
+            }));
 
-        const subPlaylist = res.result.map((value: any, index: number) => ({
-            key: value.id,
-            label: value?.title
-        }));
+            const playList = subPlaylist?.map((value: any) => ({
+                id: value.key,
+                title: value.label
+            }));
+            setPlaylist(playList);
 
-        const playList = subPlaylist.map((value: any) => ({
-            id: value.key,
-            title: value.label
-        }));
-        setPlaylist(playList);
-
-        setPlayListSub([
-            {
-                key: 'playlist-0',
-                label: 'Create Playlist',
-            },
-            ...subPlaylist
-        ]);
+            setPlayListSub([
+                {
+                    key: 'playlist-0',
+                    label: 'Create Playlist',
+                },
+                ...subPlaylist
+            ]);
+        }
     };
 
     useEffect(() => {
@@ -96,7 +99,7 @@ const Home: React.FC = () => {
 
     useEffect(() => {
         fetchSoundList(currentPage);
-    }, [currentPage, isLikedList, playListId]);
+    }, [currentPage, isLikedList, playListId, isAuthenticated]);
 
     const handlePageChange = (page: number) => {
         setCurrentPage(page);
@@ -134,7 +137,7 @@ const Home: React.FC = () => {
         const res = await post('/auth/logout', api);
         if (res) {
             localStorage.removeItem('token');
-            navigate('/login');
+            setIsAuthenticated(false);
         }
     };
 
@@ -151,7 +154,7 @@ const Home: React.FC = () => {
     const menuItem: MenuProps['items'] = [
         {
             key: `menu-1`,
-            icon: <HomeOutlined />,
+            icon: <HomeOutlined/>,
             label: `Home`,
             onClick: handleHome
         },
@@ -168,12 +171,6 @@ const Home: React.FC = () => {
             children: playListSub,
             onClick: ({key}) => handlePlaylistClick(key)
         },
-        {
-            key: `menu-4`,
-            icon: <LogoutOutlined/>,
-            label: `Logout`,
-            onClick: handleLogout
-        }
     ];
     const handlePausePlayButton = () => {
         if (isPlaying) {
@@ -216,7 +213,7 @@ const Home: React.FC = () => {
 
     const handlePlayInList = (song: any) => {
         setSoundList(prevSoundList =>
-            prevSoundList.map(s =>
+            prevSoundList?.map(s =>
                 s.id === song.id ? {...s, playing: true} : {...s, playing: false}
             )
         );
@@ -239,42 +236,39 @@ const Home: React.FC = () => {
             {contextHolder}
             <Layout
                 style={{minHeight: '100vh'}}>
-                <Sider trigger={null}>
-                    <h2 style={{color: 'wheat'}}>{username}</h2>
+                {isAuthenticated &&
+                    <>
+                        <Sider trigger={null}>
+                            <h2 style={{color: 'wheat', height: 29}}>{username}</h2>
+                            <Sider width={200} style={{background: colorBgContainer}}>
+                                <Button style={{background: colorBgContainer, width: '100%', height: 50, border: 10}}
+                                        icon={<CloudUploadOutlined/>} onClick={handleUploadSound}>
+                                    Upload Sound
+                                </Button>
+                                <Menu
+                                    theme="dark"
+                                    mode="inline"
+                                    defaultSelectedKeys={['menu-1']}
+                                    defaultOpenKeys={['menu-1']}
+                                    style={{height: '100%', borderRight: 0}}
+                                    items={menuItem}
+                                />
+                            </Sider>
+                        </Sider>
+                    </>
+                }
 
-                    <Sider width={200} style={{background: colorBgContainer}}>
-                        <Button style={{background: colorBgContainer, width: '100%', height: 50, border: 10}} icon={<CloudUploadOutlined/>} onClick={handleUploadSound}>
-                            Upload Sound
-                        </Button>
-                        <Menu
-                            theme="dark"
-                            mode="inline"
-                            defaultSelectedKeys={['menu-1']}
-                            defaultOpenKeys={['menu-1']}
-                            style={{height: '100%', borderRight: 0}}
-                            items={menuItem}
-                        />
-                    </Sider>
-                </Sider>
                 <Layout>
-                    <Header style={{padding: 0, background: colorBgContainer, height: 90}}>
-
-                        <div style={{height: 42}}>
-                            <audio ref={audioRef} src={playingSound?.url} controls style={{width: '100%'}}
-                                   controlsList="nodownload" onCanPlay={() => {
-                                setIsPlaying(true);
-                                audioRef.current?.play()
-                            }}
-                                   onEnded={handleAudioEnded}/>
-                        </div>
-                        <Button icon={<CaretLeftOutlined/>} onClick={handlePreviousSound} style={{marginRight: 8}}
-                                disabled={!playingSound}/>
-                        <Button icon={isPlaying ? <PauseOutlined/> : <PlayCircleOutlined/>}
-                                onClick={handlePausePlayButton}
-                                style={{marginRight: 8}} disabled={!playingSound}/>
-                        <Button icon={<CaretRightOutlined/>} onClick={handleNextSound} style={{marginRight: 50}}
-                                disabled={!playingSound}/>
-
+                    <Header style={{ display: 'flex', alignItems: 'center', fontWeight: "bold", justifyContent: "flex-end" }}>
+                        {isAuthenticated ?
+                            <Button style={{ fontWeight: "bold", backgroundColor: '#001529', border: "none", color: "wheat" }}
+                                    icon={<LogoutOutlined style={{fontWeight: "bold"}}/>}
+                            onClick={handleLogout}>Logout</Button> :
+                            <Button style={{ fontWeight: "bold", backgroundColor: '#001529', border: "none", color: "wheat" }}
+                                    icon={<LoginOutlined style={{fontWeight: "bold"}}/>}
+                                    onClick={() => navigate('/login')}
+                            >Sign in</Button>
+                        }
                     </Header>
                     <Content
                         style={{
@@ -285,9 +279,26 @@ const Home: React.FC = () => {
                             borderRadius: borderRadiusLG,
                             display: "flex",
                             flexDirection: 'column',
-                            justifyContent: 'space-between'
+                            justifyContent: 'flex-start'
                         }}
                     >
+                        <div style={{padding: 0, background: colorBgContainer, height: 90}}>
+                            <div style={{height: 42}}>
+                                <audio ref={audioRef} src={playingSound?.url} controls style={{width: '100%'}}
+                                       controlsList="nodownload" onCanPlay={() => {
+                                    setIsPlaying(true);
+                                    audioRef.current?.play()
+                                }}
+                                       onEnded={handleAudioEnded}/>
+                            </div>
+                            <Button icon={<CaretLeftOutlined/>} onClick={handlePreviousSound} style={{marginRight: 8}}
+                                    disabled={!playingSound}/>
+                            <Button icon={isPlaying ? <PauseOutlined/> : <PlayCircleOutlined/>}
+                                    onClick={handlePausePlayButton}
+                                    style={{marginRight: 8}} disabled={!playingSound}/>
+                            <Button icon={<CaretRightOutlined/>} onClick={handleNextSound} style={{marginRight: 50}}
+                                    disabled={!playingSound}/>
+                        </div>
                         <SoundList sounds={soundList}
                                    onPlay={handlePlayInList}
                                    onLike={handleLikeSoundInList}
@@ -301,14 +312,19 @@ const Home: React.FC = () => {
                             onChange={handlePageChange}
                             style={{marginTop: 20, textAlign: 'center'}}
                         />
-                        <CreatePlaylist visible={isModalCreatePlaylistVisible}
-                                        onClose={handleCloseModalCreatePlaylist}
-                                        notificationInstance={api}
-                                        onPlaylistCreated={handlePlaylistCreated}/>
-                        <UploadSound onClose={handleCloseModalUpload}
-                                     notificationInstance={api}
-                                     visible={isModalUploadVisible}
-                                     onUploadSuccess={() => fetchSoundList(currentPage)}/>
+
+                        {isAuthenticated &&
+                            <>
+                                <CreatePlaylist visible={isModalCreatePlaylistVisible}
+                                                onClose={handleCloseModalCreatePlaylist}
+                                                notificationInstance={api}
+                                                onPlaylistCreated={handlePlaylistCreated}/>
+                                <UploadSound onClose={handleCloseModalUpload}
+                                             notificationInstance={api}
+                                             visible={isModalUploadVisible}
+                                             onUploadSuccess={() => fetchSoundList(currentPage)}/>
+                            </>
+                        }
                     </Content>
                 </Layout>
             </Layout>

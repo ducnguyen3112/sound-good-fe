@@ -15,12 +15,12 @@ const App: React.FC = () => {
                     <Fragment>
                         <Routes>
                             <Route path='/' element={<PrivateRoute/>}>
-                                <Route path='/' element={<Home/>}/>
-                                <Route path='/home' element={<Home/>}/>
                                 <Route path="/admin/dashboard" element={<Dashboard/>}/>
                             </Route>
                             <Route path="/login" element={<Login/>}/>
                             <Route path="/register" element={<Register/>}/>
+                            <Route path='/' element={<Home/>}/>
+                            <Route path='/home' element={<Home/>}/>
                         </Routes>
                     </Fragment>
             </AuthProvider>

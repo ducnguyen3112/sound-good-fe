@@ -54,7 +54,7 @@ const UploadSound: React.FC<UploadSoundProps> = ({visible, onClose, notification
                 console.log(res)
                 const req = {
                     title: fileName,
-                    soundPath: res.result.filePath
+                    soundPath: res?.result.filePath
                 }
                 const createSoundRes = await post('/sounds', notificationInstance, req);
                 if (createSoundRes) {

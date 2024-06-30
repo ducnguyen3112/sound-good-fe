@@ -10,10 +10,9 @@ const Login: React.FC = () => {
     const navigate = useNavigate();
     const [api, contextHolder] = notification.useNotification();
 
-    const { tokenExpiredMessage, setTokenExpiredMessage } = useAuth();
+    const { tokenExpiredMessage, setTokenExpiredMessage, setIsAuthenticated } = useAuth();
 
     useEffect(() => {
-        console.log(tokenExpiredMessage)
         if (tokenExpiredMessage) {
             notification.error({
                 message: tokenExpiredMessage,
@@ -29,6 +28,7 @@ const Login: React.FC = () => {
             localStorage.setItem('role', response.result.role);
             localStorage.setItem('exp', response.result.exp);
             localStorage.setItem('username', values.username);
+            setIsAuthenticated(true);
             if (response.result.role === 'USER') {
                 navigate('/home');
             } else if (response.result.role === 'ADMIN') {

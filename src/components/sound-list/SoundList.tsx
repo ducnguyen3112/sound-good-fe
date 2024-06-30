@@ -4,6 +4,7 @@ import {HeartFilled, HeartOutlined, PlayCircleOutlined} from '@ant-design/icons'
 import PlaylistSelector, {Playlist} from "../playlist-selector/PlaylistSelector";
 import {put} from "../service/apiService";
 import {NotificationInstance} from "antd/lib/notification/interface";
+import {useAuth} from "../auth/AuthProvider";
 
 
 export interface Sound {
@@ -25,6 +26,9 @@ export interface SoundListProp {
 }
 
 const SoundList: React.FC<SoundListProp> = ({sounds, onPlay, onLike, playList, notificationInstance, actionPlaylist, playlistId}) => {
+
+    const {isAuthenticated} = useAuth();
+
 
     const handleActionPlaylist = async (data: any, sound: Sound, action = 'ADD' || 'REMOVE') => {
         const res = await put(`/playlists/${data.id}/sounds/${sound.id}?action=${action}`, notificationInstance);
@@ -55,11 +59,13 @@ const SoundList: React.FC<SoundListProp> = ({sounds, onPlay, onLike, playList, n
                                 onClick={() => onPlay(song)}
                             >
                             </Button>,
+                            isAuthenticated &&
                             <Button
                                 icon={song.liked ? <HeartFilled style={{color: "red"}}/> : <HeartOutlined/>}
                                 onClick={() => onLike(song)}
                             >
                             </Button>,
+                            isAuthenticated &&
                             <PlaylistSelector playlists={playList}
                                               onSelect={(data) => handleActionPlaylist(data, song, 'ADD')}
                                               playlistId={playlistId}

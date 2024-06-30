@@ -14,11 +14,14 @@ interface AuthProviderProps {
     children: ReactNode;
 }
 
-const isTokenExpired = (): boolean => {
-    const token = localStorage.getItem('token');
-    const expiration = localStorage.getItem('exp');
 
-    if (!token || !expiration) {
+const isLogin = (): boolean => {
+    const token = localStorage.getItem('token');
+    return !!token;
+};
+const isTokenExpired = (): boolean => {
+    const expiration = localStorage.getItem('exp');
+    if (!expiration) {
         return true;
     }
 
@@ -28,7 +31,7 @@ const isTokenExpired = (): boolean => {
 
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
-    const [isAuthenticated, setIsAuthenticated] = useState<boolean>(!isTokenExpired());
+    const [isAuthenticated, setIsAuthenticated] = useState<boolean>(isLogin());
     const [tokenExpiredMessage, setTokenExpiredMessage] = useState<string>('');
     const navigate = useNavigate();
 

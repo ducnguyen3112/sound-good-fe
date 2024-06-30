@@ -63,7 +63,7 @@ const PlaylistSelector: React.FC<PlaylistSelectorProps> = ({playlists, onSelect,
             onCancel={() => setVisible(false)}
             onOpenChange={handleVisibleChange}
             okButtonProps={{disabled: !selectedPlaylist && !playlistId}}
-            okText="Select"
+            okText="Ok"
             cancelText="Cancel"
         >
             <Button
