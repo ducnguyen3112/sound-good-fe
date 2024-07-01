@@ -14,7 +14,7 @@ const App: React.FC = () => {
             <AuthProvider>
                     <Fragment>
                         <Routes>
-                            <Route path='/' element={<PrivateRoute/>}>
+                            <Route path='/admin' element={<PrivateRoute/>}>
                                 <Route path="/admin/dashboard" element={<Dashboard/>}/>
                             </Route>
                             <Route path="/login" element={<Login/>}/>

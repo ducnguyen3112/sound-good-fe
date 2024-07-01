@@ -138,6 +138,7 @@ const Home: React.FC = () => {
         if (res) {
             localStorage.removeItem('token');
             setIsAuthenticated(false);
+            setIsLikedList(false);
         }
     };
 

@@ -22,7 +22,7 @@ const isLogin = (): boolean => {
 const isTokenExpired = (): boolean => {
     const expiration = localStorage.getItem('exp');
     if (!expiration) {
-        return true;
+        return false;
     }
 
     const now = new Date().getTime();
