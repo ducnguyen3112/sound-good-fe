@@ -11,6 +11,7 @@ Run:
 1. Run docker-compose
    `` docker-compose up -d ``
 2. Check heath ``http://localhost:8080/sound-good/api/actuator/health``
+3. Access the link ``http://localhost:3000``
 
 
 ## Ref
