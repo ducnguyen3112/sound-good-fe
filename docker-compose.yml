@@ -11,6 +11,8 @@ services:
       SPRING_DATASOURCE_PASSWORD: dbpassword
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.PostgreSQLDialect
+    volumes:
+      - ./uploads:/app/uploads
 
   db:
     image: postgres:13
